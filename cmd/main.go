@@ -8,16 +8,21 @@ import (
 )
 
 var filePath string
+var dirPath string
 
 func init() {
 	flag.StringVar(&filePath, "p", "", "file path")
+	flag.StringVar(&dirPath, "d", "", "dir path")
 	flag.Parse()
 }
 
 func main() {
-	if len(filePath) > 0 {
+	switch {
+	case len(filePath) > 0:
 		fmt.Println(services.HashOfFile(filePath))
-	} else {
+	case len(dirPath) > 0:
+		fmt.Println(services.HashOfDir(dirPath))
+	default:
 		log.Println("Error with flag, use '-p' flag ")
 	}
 }
