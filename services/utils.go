@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sha256-sum/errors"
@@ -35,6 +34,7 @@ func HashOfDir(path string) []string {
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				errors.CheckErr(err)
 				return err
 			}
 			if info.IsDir() == false {
@@ -43,7 +43,7 @@ func HashOfDir(path string) []string {
 			return nil
 		})
 	if err != nil {
-		log.Println(err)
+		errors.CheckErr(err)
 	}
 	return res
 }
