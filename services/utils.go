@@ -3,22 +3,27 @@ package services
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"os"
 	"sha256-sum/errors"
 )
 
-func HashOfFile(path string) {
+func HashOfFile(path string) string {
 	file, err := os.Open(path)
-
-	errors.CheckErr(err)
+	if err != nil {
+		errors.CheckErr(err)
+		return ""
+	}
 
 	defer file.Close()
 
 	hash := sha256.New()
 	_, err = io.Copy(hash, file)
 
-	errors.CheckErr(err)
-	fmt.Printf("File: %s, Checksum: %s ", file.Name(), hex.EncodeToString(hash.Sum(nil)))
+	if err != nil {
+		errors.CheckErr(err)
+		return ""
+	}
+	res := "File: " + file.Name() + ", Checksum: " + hex.EncodeToString(hash.Sum(nil))
+	return res
 }

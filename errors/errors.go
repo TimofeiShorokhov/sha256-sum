@@ -5,7 +5,5 @@ import (
 )
 
 func CheckErr(err error) {
-	if err != nil {
-		log.Fatalln("Error occurred: ", err)
-	}
+	log.Println("Error occurred: ", err)
 }
