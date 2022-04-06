@@ -2,20 +2,15 @@ package services
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sha256-sum/errors"
 	"sync"
 )
 
-const help = "\nUse -p flag to calculate checksum for file \nUse -d flag to calculate checksum of all files in directory"
-
-func HashOfFile(path string, wg *sync.WaitGroup) string {
-	defer wg.Done()
+func HashOfFile(path string) string {
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -32,12 +27,11 @@ func HashOfFile(path string, wg *sync.WaitGroup) string {
 		errors.CheckErr(err)
 		return ""
 	}
-	res := "File: " + file.Name() + ", Checksum: " + hex.EncodeToString(hash.Sum(nil))
+	res := fmt.Sprintf("%x %s", hash.Sum(nil), filepath.Base(path))
 	return res
 }
 
-func HashOfDir(path string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func HashOfDir(path string, paths chan string) {
 
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
@@ -46,19 +40,49 @@ func HashOfDir(path string, wg *sync.WaitGroup) {
 				return err
 			}
 			if info.IsDir() == false {
-				wg.Add(1)
-				go fmt.Println(HashOfFile(path, wg))
+				paths <- path
 			}
 			return nil
 		})
 	if err != nil {
 		errors.CheckErr(err)
 	}
+	close(paths)
 }
 
-func PrintHelp(path string, wg *sync.WaitGroup) {
+func Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- string) {
 	defer wg.Done()
-	if path == "--help" {
-		log.Println(help)
+	for j := range jobs {
+		results <- HashOfFile(j)
 	}
+}
+
+func Result(results chan string) {
+
+	for {
+		select {
+		case hash, ok := <-results:
+			if !ok {
+				return
+			}
+			fmt.Println(hash)
+		}
+	}
+}
+
+func CheckSum(path string) {
+	jobs := make(chan string)
+	results := make(chan string)
+
+	go HashOfDir(path, jobs)
+	go func() {
+		var wg sync.WaitGroup
+		for w := 1; w <= 10; w++ {
+			wg.Add(1)
+			go Worker(&wg, jobs, results)
+		}
+		defer close(results)
+		wg.Wait()
+	}()
+	Result(results)
 }
