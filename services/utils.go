@@ -1,16 +1,17 @@
 package services
 
 import (
-	"context"
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
+	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sha256-sum/errors"
-	"sync"
 )
 
 func HashOfFile(path string, hashAlg string) string {
@@ -65,51 +66,32 @@ func HashOfDir(path string, paths chan string) {
 	close(paths)
 }
 
-func Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- string, hashAlg string) {
-	defer wg.Done()
-	for j := range jobs {
-		results <- HashOfFile(j, hashAlg)
-	}
-}
-
-func Result(ctx context.Context, results chan string) {
-
-	for {
-		select {
-		case hash, ok := <-results:
-			if !ok {
-				return
-			}
-			fmt.Println(hash)
-		case <-ctx.Done():
-			fmt.Println("canceled by user")
+func CatchStopSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			log.Printf("stopped by user %d", sig)
 			os.Exit(1)
-			return
 		}
-	}
+	}()
 }
 
-func CheckSum(path string, hashAlg string) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-
-	go func() {
-		fmt.Scanln()
-		cancel()
-	}()
-
-	jobs := make(chan string)
-	results := make(chan string)
-
-	go HashOfDir(path, jobs)
-	go func() {
-		var wg sync.WaitGroup
-		for w := 1; w <= 10; w++ {
-			wg.Add(1)
-			go Worker(&wg, jobs, results, hashAlg)
+func CallFunction(filePath string, helpPath bool, dirPath string, hashAlg string) {
+	switch {
+	case helpPath:
+		flag.Usage = func() {
+			fmt.Fprintf(os.Stderr, "Help with commands %s:\nUse one of the following commands:\n", os.Args[0])
+			flag.VisitAll(func(f *flag.Flag) {
+				fmt.Fprintf(os.Stderr, " flag:	-%v \n 	%v\n", f.Name, f.Usage)
+			})
 		}
-		defer close(results)
-		wg.Wait()
-	}()
-	Result(ctx, results)
+		flag.Usage()
+	case len(filePath) > 0:
+		fmt.Println(HashOfFile(filePath, hashAlg))
+	case len(dirPath) > 0:
+		CheckSum(dirPath, hashAlg)
+	default:
+		log.Println("Error with flag, use '-h' flag for help ")
+	}
 }

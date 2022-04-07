@@ -2,10 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
 	"sha256-sum/services"
 )
 
@@ -25,30 +21,6 @@ func init() {
 }
 
 func main() {
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for sig := range c {
-			log.Printf("stopped by user %d", sig)
-			os.Exit(1)
-		}
-	}()
-
-	switch {
-	case helpPath:
-		flag.Usage = func() {
-			fmt.Fprintf(os.Stderr, "Help with commands %s:\nUse one of the following commands:\n", os.Args[0])
-			flag.VisitAll(func(f *flag.Flag) {
-				fmt.Fprintf(os.Stderr, " flag:	-%v \n 	%v\n", f.Name, f.Usage)
-			})
-		}
-		flag.Usage()
-	case len(filePath) > 0:
-		fmt.Println(services.HashOfFile(filePath, hashAlg))
-	case len(dirPath) > 0:
-		services.CheckSum(dirPath, hashAlg)
-	default:
-		log.Println("Error with flag, use '-h' flag for help ")
-	}
+	services.CatchStopSignal()
+	services.CallFunction(filePath, helpPath, dirPath, hashAlg)
 }
