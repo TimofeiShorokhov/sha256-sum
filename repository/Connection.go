@@ -8,16 +8,16 @@ import (
 )
 
 type PostgresDB struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	DBName   string `mapstructure:"dbname"`
+	SSLMode  string `mapstructure:"sslmode"`
 }
 
-func NewPostgresDB(dbs PostgresDB) (*sql.DB, error) {
-	pgsqlConn := fmt.Sprintf("host= %s port= %s user=%s password=%s dbname=%s sslmode=disable", dbs.Host, dbs.Port, dbs.User, dbs.Password, dbs.DBName)
+func NewPostgresDB(cfg *PostgresDB) (*sql.DB, error) {
+	pgsqlConn := fmt.Sprintf("host= %s port= %s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName, cfg.SSLMode)
 	db, err := sql.Open("postgres", pgsqlConn)
 	if err != nil {
 

@@ -44,13 +44,40 @@ func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 
 func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath string, algorithm string) (int, error) {
 	var HashId int
-	insertValue := `INSERT INTO shasum(file, checksum, file_path, algorithm) VALUES ($1,$2,$3,$4)
-	   on conflict (file) do update set checksum=excluded.checksum,algorithm=excluded.algorithm `
+	transaction, err := r.db.Begin()
 
-	row := r.db.QueryRow(insertValue, fileName, checksum, filePath, algorithm)
+	if err != nil {
+		log.Println("error with database: " + err.Error())
+	}
 
-	if err := row.Scan(&HashId); err != nil {
+	defer transaction.Commit()
+
+	insertValue := `INSERT INTO shasum(file, checksum, file_path, algorithm) VALUES ($1,$2,$3,$4)`
+
+	row := transaction.QueryRow(insertValue, fileName, checksum, filePath, algorithm)
+
+	if err = row.Scan(&HashId); err != nil {
 		return 0, fmt.Errorf("error while scanning for id: %s", err)
 	}
 	return HashId, nil
+}
+
+func (r *HashPostgres) GetChangedHashFromDB() {
+
+	selectValus := `SELECT file,algorithm,count(*) FROM shasum group by file,algorithm having count(*) > 1`
+
+	get, err := r.db.Query(selectValus)
+	if err != nil {
+		log.Println("error of getting data: " + err.Error())
+	}
+
+	defer get.Close()
+
+	for get.Next() {
+		var file string
+		var alg string
+		var count int
+		err = get.Scan(&file, &alg, &count)
+		fmt.Printf("Checksum of this file: %s, with algorithm: %s, was changed\n", file, alg)
+	}
 }

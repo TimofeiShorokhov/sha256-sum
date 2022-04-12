@@ -10,7 +10,8 @@ type HashApp interface {
 	PutData(res HashDataUtils) (int, error)
 	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string)
 	CheckSum(path string, hashAlg string)
-	CallFunction(filePath string, helpPath bool, dirPath string, getData bool, hashAlg string)
+	CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData bool, hashAlg string)
+	GetChangedHash()
 }
 
 type Service struct {

@@ -102,7 +102,7 @@ func CatchStopSignal() {
 	}()
 }
 
-func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, hashAlg string) {
+func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData bool, hashAlg string) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -118,6 +118,8 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 		s.CheckSum(dirPath, hashAlg)
 	case getData:
 		s.GetData()
+	case getChangedData:
+		s.GetChangedHash()
 	default:
 		log.Println("Error with flag, use '-h' flag for help ")
 	}
@@ -142,4 +144,8 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 
 func (s *HashService) PutData(res HashDataUtils) (int, error) {
 	return s.repo.PutDataInDB(res.FileName, res.Checksum, res.FilePath, res.Algorithm)
+}
+
+func (s *HashService) GetChangedHash() {
+	s.repo.GetChangedHashFromDB()
 }

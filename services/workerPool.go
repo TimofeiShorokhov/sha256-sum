@@ -25,6 +25,7 @@ func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) {
 				return
 			}
 			fmt.Println(hash)
+
 		case <-ctx.Done():
 			fmt.Println("canceled by user")
 			os.Exit(1)
