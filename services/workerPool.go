@@ -7,14 +7,16 @@ import (
 	"sync"
 )
 
-func Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- string, hashAlg string) {
+func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string) {
 	defer wg.Done()
 	for j := range jobs {
 		results <- HashOfFile(j, hashAlg)
+		res := HashOfFile(j, hashAlg)
+		s.PutData(res)
 	}
 }
 
-func Result(ctx context.Context, results chan string) {
+func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) {
 
 	for {
 		select {
@@ -31,7 +33,7 @@ func Result(ctx context.Context, results chan string) {
 	}
 }
 
-func CheckSum(path string, hashAlg string) {
+func (s *HashService) CheckSum(path string, hashAlg string) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -41,17 +43,17 @@ func CheckSum(path string, hashAlg string) {
 	}()
 
 	jobs := make(chan string)
-	results := make(chan string)
+	results := make(chan HashDataUtils)
 
 	go HashOfDir(path, jobs)
 	go func() {
 		var wg sync.WaitGroup
 		for w := 1; w <= 10; w++ {
 			wg.Add(1)
-			go Worker(&wg, jobs, results, hashAlg)
+			go s.Worker(&wg, jobs, results, hashAlg)
 		}
 		defer close(results)
 		wg.Wait()
 	}()
-	Result(ctx, results)
+	s.Result(ctx, results)
 }

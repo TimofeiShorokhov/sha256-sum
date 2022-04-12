@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -12,39 +13,63 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sha256-sum/errors"
+	"sha256-sum/repository"
 )
 
-func HashOfFile(path string, hashAlg string) string {
+type HashService struct {
+	repo repository.Repository
+}
+
+func NewHashService(repo repository.Repository) *HashService {
+	return &HashService{
+		repo: repo,
+	}
+}
+
+type HashDataUtils struct {
+	FileName  string
+	Checksum  string
+	FilePath  string
+	Algorithm string
+}
+
+func HashOfFile(path string, hashAlg string) HashDataUtils {
+	var res HashDataUtils
 
 	file, err := os.Open(path)
 	if err != nil {
 		errors.CheckErr(err)
-		return ""
+		return HashDataUtils{}
 	}
 
 	defer file.Close()
 
-	var checkSum interface{}
+	var checkSum string
 
 	switch hashAlg {
 	case "md5":
 		hash := md5.New()
 		_, err = io.Copy(hash, file)
-		checkSum = hash.Sum(nil)
-	case "512":
+		checkSum = hex.EncodeToString(hash.Sum(nil))
+	case "sha512":
 		hash := sha512.New()
 		_, err = io.Copy(hash, file)
-		checkSum = hash.Sum(nil)
+		checkSum = hex.EncodeToString(hash.Sum(nil))
 	default:
 		hash := sha256.New()
+		hashAlg = "sha256"
 		_, err = io.Copy(hash, file)
-		checkSum = hash.Sum(nil)
+		checkSum = hex.EncodeToString(hash.Sum(nil))
 	}
 	if err != nil {
 		errors.CheckErr(err)
-		return ""
+		return HashDataUtils{}
 	}
-	res := fmt.Sprintf("%x %s", checkSum, filepath.Base(path))
+	res.FileName = filepath.Base(path)
+	res.Checksum = checkSum
+	res.FilePath = file.Name()
+	res.Algorithm = hashAlg
+
 	return res
 }
 
@@ -77,7 +102,7 @@ func CatchStopSignal() {
 	}()
 }
 
-func CallFunction(filePath string, helpPath bool, dirPath string, hashAlg string) {
+func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, hashAlg string) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -90,8 +115,31 @@ func CallFunction(filePath string, helpPath bool, dirPath string, hashAlg string
 	case len(filePath) > 0:
 		fmt.Println(HashOfFile(filePath, hashAlg))
 	case len(dirPath) > 0:
-		CheckSum(dirPath, hashAlg)
+		s.CheckSum(dirPath, hashAlg)
+	case getData:
+		s.GetData()
 	default:
 		log.Println("Error with flag, use '-h' flag for help ")
 	}
+}
+
+func (s *HashService) GetData() ([]repository.HashData, error) {
+	data, err := s.repo.GetDataFromDB()
+
+	if data == nil {
+		log.Println("no data for output")
+		return nil, err
+	}
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, h := range data {
+		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, h.Algorithm)
+	}
+	return data, nil
+}
+
+func (s *HashService) PutData(res HashDataUtils) (int, error) {
+	return s.repo.PutDataInDB(res.FileName, res.Checksum, res.FilePath, res.Algorithm)
 }
