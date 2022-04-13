@@ -1,3 +1,4 @@
+//Actions with database
 package repository
 
 import (
@@ -18,10 +19,12 @@ type HashData struct {
 	Algorithm string
 }
 
+//Creating database object
 func NewHashPostgres(db *sql.DB) *HashPostgres {
 	return &HashPostgres{db: db}
 }
 
+//Getting data of all hashes from database
 func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 	var hashes []HashData
 
@@ -42,6 +45,7 @@ func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 	return hashes, nil
 }
 
+//Inserting data in database with check of changes
 func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath string, algorithm string) (int, error) {
 	var HashId int
 	transaction, err := r.db.Begin()
@@ -52,7 +56,7 @@ func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath st
 
 	defer transaction.Commit()
 
-	insertValue := `INSERT INTO shasum(file, checksum, file_path, algorithm) VALUES ($1,$2,$3,$4)`
+	insertValue := `Select check_hash($1,$2,$3,$4)`
 
 	row := transaction.QueryRow(insertValue, fileName, checksum, filePath, algorithm)
 
@@ -60,24 +64,4 @@ func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath st
 		return 0, fmt.Errorf("error while scanning for id: %s", err)
 	}
 	return HashId, nil
-}
-
-func (r *HashPostgres) GetChangedHashFromDB() {
-
-	selectValus := `SELECT file,algorithm,count(*) FROM shasum group by file,algorithm having count(*) > 1`
-
-	get, err := r.db.Query(selectValus)
-	if err != nil {
-		log.Println("error of getting data: " + err.Error())
-	}
-
-	defer get.Close()
-
-	for get.Next() {
-		var file string
-		var alg string
-		var count int
-		err = get.Scan(&file, &alg, &count)
-		fmt.Printf("Checksum of this file: %s, with algorithm: %s, was changed\n", file, alg)
-	}
 }
