@@ -16,6 +16,7 @@ type PostgresDB struct {
 	SSLMode  string `mapstructure:"sslmode"`
 }
 
+//Connection to database
 func NewPostgresDB(cfg *PostgresDB) (*sql.DB, error) {
 	pgsqlConn := fmt.Sprintf("host= %s port= %s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName, cfg.SSLMode)
 	db, err := sql.Open("postgres", pgsqlConn)

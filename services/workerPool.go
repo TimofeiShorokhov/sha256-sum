@@ -7,6 +7,7 @@ import (
 	"sync"
 )
 
+//Workers for goroutines
 func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string) {
 	defer wg.Done()
 	for j := range jobs {
@@ -14,6 +15,7 @@ func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 	}
 }
 
+//Inserting results of hashing in slice of structures
 func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils {
 	var data []HashDataUtils
 	for {
@@ -34,10 +36,12 @@ func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []
 	}
 }
 
+//Inserting data
 func (s *HashService) SavingData(data []HashDataUtils) {
 	s.PutData(data)
 }
 
+//Hashing files with workers
 func (s *HashService) CheckSum(path string, hashAlg string) []HashDataUtils {
 
 	ctx := context.Background()

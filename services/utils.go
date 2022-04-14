@@ -33,6 +33,7 @@ type HashDataUtils struct {
 	Algorithm string
 }
 
+//Generating checksum of file
 func HashOfFile(path string, hashAlg string) HashDataUtils {
 	var res HashDataUtils
 
@@ -73,6 +74,7 @@ func HashOfFile(path string, hashAlg string) HashDataUtils {
 	return res
 }
 
+//Generating checksum of all files by the directory
 func HashOfDir(path string, paths chan string) {
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
@@ -91,6 +93,7 @@ func HashOfDir(path string, paths chan string) {
 	close(paths)
 }
 
+//Custom interrupt
 func CatchStopSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -102,6 +105,7 @@ func CatchStopSignal() {
 	}()
 }
 
+//Function for calling checksum function
 func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData bool, hashAlg string) {
 	switch {
 	case helpPath:
@@ -123,6 +127,7 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 	}
 }
 
+//Getting data
 func (s *HashService) GetData() ([]repository.HashData, error) {
 	data, err := s.repo.GetDataFromDB()
 
@@ -140,6 +145,7 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 	return data, nil
 }
 
+//Inserting data
 func (s *HashService) PutData(res []HashDataUtils) error {
 	var data []repository.HashData
 	var dat repository.HashData

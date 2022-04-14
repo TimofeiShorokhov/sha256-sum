@@ -19,6 +19,7 @@ var (
 	hashAlg        string
 )
 
+//Creating and parsing flags
 func init() {
 	flag.StringVar(&filePath, "p", "", "Hash through file path")
 	flag.StringVar(&dirPath, "d", "", "Hash of all files through directory path")
@@ -29,7 +30,6 @@ func init() {
 	flag.Parse()
 }
 
-//Hello there
 func main() {
 	start := time.Now()
 
