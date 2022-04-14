@@ -11,30 +11,35 @@ func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 	defer wg.Done()
 	for j := range jobs {
 		results <- HashOfFile(j, hashAlg)
-		res := HashOfFile(j, hashAlg)
-		s.PutData(res)
 	}
 }
 
-func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) {
-
+func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils {
+	var data []HashDataUtils
 	for {
 		select {
 		case hash, ok := <-results:
 			if !ok {
-				return
+				return data
 			}
+			data = append(data, hash)
 			fmt.Println(hash)
 
 		case <-ctx.Done():
 			fmt.Println("canceled by user")
 			os.Exit(1)
-			return
+			return []HashDataUtils{}
 		}
+
 	}
 }
 
-func (s *HashService) CheckSum(path string, hashAlg string) {
+func (s *HashService) SavingData(data []HashDataUtils) {
+	s.PutData(data)
+}
+
+func (s *HashService) CheckSum(path string, hashAlg string) []HashDataUtils {
+
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -56,5 +61,5 @@ func (s *HashService) CheckSum(path string, hashAlg string) {
 		defer close(results)
 		wg.Wait()
 	}()
-	s.Result(ctx, results)
+	return s.Result(ctx, results)
 }

@@ -115,11 +115,9 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 	case len(filePath) > 0:
 		fmt.Println(HashOfFile(filePath, hashAlg))
 	case len(dirPath) > 0:
-		s.CheckSum(dirPath, hashAlg)
+		s.SavingData(s.CheckSum(dirPath, hashAlg))
 	case getData:
 		s.GetData()
-	case getChangedData:
-		s.GetChangedHash()
 	default:
 		log.Println("Error with flag, use '-h' flag for help ")
 	}
@@ -142,10 +140,15 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 	return data, nil
 }
 
-func (s *HashService) PutData(res HashDataUtils) (int, error) {
-	return s.repo.PutDataInDB(res.FileName, res.Checksum, res.FilePath, res.Algorithm)
-}
-
-func (s *HashService) GetChangedHash() {
-	s.repo.GetChangedHashFromDB()
+func (s *HashService) PutData(res []HashDataUtils) error {
+	var data []repository.HashData
+	var dat repository.HashData
+	for _, h := range res {
+		dat.FileName = h.FileName
+		dat.FilePath = h.FilePath
+		dat.Algorithm = h.Algorithm
+		dat.CheckSum = h.Checksum
+		data = append(data, dat)
+	}
+	return s.repo.PutDataInDB(data)
 }

@@ -3,7 +3,6 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 )
 
@@ -45,6 +44,7 @@ func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 	return hashes, nil
 }
 
+/*
 //Inserting data in database with check of changes
 func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath string, algorithm string) (int, error) {
 	var HashId int
@@ -64,4 +64,23 @@ func (r *HashPostgres) PutDataInDB(fileName string, checksum string, filePath st
 		return 0, fmt.Errorf("error while scanning for id: %s", err)
 	}
 	return HashId, nil
+}
+
+*/
+func (r *HashPostgres) PutDataInDB(data []HashData) error {
+
+	transaction, err := r.db.Begin()
+
+	if err != nil {
+		log.Println("error with database: " + err.Error())
+	}
+
+	query := `Select check_hash($1,$2,$3,$4)`
+	for _, h := range data {
+		_, err := transaction.Exec(query, h.FileName, h.CheckSum, h.FilePath, h.Algorithm)
+		if err != nil {
+			transaction.Rollback()
+		}
+	}
+	return transaction.Commit()
 }

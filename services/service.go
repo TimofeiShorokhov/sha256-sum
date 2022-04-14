@@ -1,17 +1,18 @@
 package services
 
 import (
+	"context"
 	"sha256-sum/repository"
 	"sync"
 )
 
 type HashApp interface {
 	GetData() ([]repository.HashData, error)
-	PutData(res HashDataUtils) (int, error)
+	PutData(res []HashDataUtils) error
 	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string)
-	CheckSum(path string, hashAlg string)
+	CheckSum(path string, hashAlg string) []HashDataUtils
 	CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData bool, hashAlg string)
-	GetChangedHash()
+	Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils
 }
 
 type Service struct {
