@@ -83,3 +83,21 @@ func (r *HashPostgres) GetDataByPathFromDB(dir string, alg string) ([]HashData, 
 	}
 	return hashes, nil
 }
+
+func (r *HashPostgres) UpdateDeletedStatusInDB(data []HashData) error {
+
+	transaction, err := r.db.Begin()
+
+	if err != nil {
+		log.Println("error with database: " + err.Error())
+	}
+	query := `UPDATE shasum SET deleted = true where file_path = $1 and algorithm = $2`
+
+	for _, h := range data {
+		_, err := transaction.Exec(query, h.FilePath, h.Algorithm)
+		if err != nil {
+			transaction.Rollback()
+		}
+	}
+	return transaction.Commit()
+}

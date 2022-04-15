@@ -18,4 +18,5 @@ type HashRep interface {
 	GetDataFromDB() ([]HashData, error)
 	PutDataInDB(data []HashData) error
 	GetDataByPathFromDB(dir string, alg string) ([]HashData, error)
+	UpdateDeletedStatusInDB(data []HashData) error
 }

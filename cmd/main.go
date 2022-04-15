@@ -16,6 +16,7 @@ var (
 	dirPath        string
 	getData        bool
 	getChangedData string
+	updDeleted     string
 	hashAlg        string
 )
 
@@ -24,8 +25,9 @@ func init() {
 	flag.StringVar(&filePath, "p", "", "Hash through file path")
 	flag.StringVar(&dirPath, "d", "", "Hash of all files through directory path")
 	flag.StringVar(&hashAlg, "a", "", "md5, sha512, default: sha256")
-	flag.BoolVar(&getData, "g", false, "Get all data from database")
 	flag.StringVar(&getChangedData, "c", "", "Check of changed checksum")
+	flag.StringVar(&updDeleted, "u", "", "Update deleted status in database")
+	flag.BoolVar(&getData, "g", false, "Get all data from database")
 	flag.BoolVar(&helpPath, "h", false, "info")
 	flag.Parse()
 }
@@ -47,6 +49,6 @@ func main() {
 	ser := services.NewService(repository)
 
 	services.CatchStopSignal()
-	ser.CallFunction(filePath, helpPath, dirPath, getData, getChangedData, hashAlg)
+	ser.CallFunction(filePath, helpPath, dirPath, getData, getChangedData, updDeleted, hashAlg)
 	fmt.Println(time.Since(start).Seconds())
 }

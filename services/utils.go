@@ -114,7 +114,7 @@ func CatchStopSignal() {
 }
 
 //Function for calling checksum function
-func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData string, hashAlg string) {
+func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -132,6 +132,8 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 		s.GetData()
 	case len(getChangedData) > 0:
 		s.GetChangedData(getChangedData, hashAlg)
+	case len(updDeleted) > 0:
+		s.UpdateDeletedStatus(updDeleted, hashAlg)
 	default:
 		log.Println("Error with flag, use '-h' flag for help ")
 	}
@@ -204,5 +206,52 @@ func (s *HashService) GetChangedData(dir string, alg string) error {
 	if results == nil {
 		fmt.Println("No changes found")
 	}
+	return nil
+}
+
+func (s *HashService) UpdateDeletedStatus(dir string, alg string) error {
+	var results []ChangedHashes
+	var result ChangedHashes
+	databaseData, err := s.repo.GetDataByPathFromDB(dir, alg)
+
+	if databaseData == nil {
+		log.Println("no data for output")
+		return err
+	}
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	secondData := s.CheckSum(dir, alg)
+
+	sm := make(map[string]struct{}, len(secondData))
+	for _, n := range secondData {
+		sm[n.FilePath] = struct{}{}
+	}
+
+	for _, n := range databaseData {
+		if _, ok := sm[n.FilePath]; !ok {
+			result.FilePath = n.FilePath
+			result.Algorithm = n.Algorithm
+			results = append(results, result)
+		}
+	}
+
+	var data []repository.HashData
+	var dat repository.HashData
+	for _, h := range results {
+		dat.FilePath = h.FilePath
+		dat.Algorithm = h.Algorithm
+		data = append(data, dat)
+	}
+	if data != nil {
+		for _, h := range data {
+			fmt.Printf("This file was deleted: file: %s, algorithm: %s\n", h.FilePath, h.Algorithm)
+		}
+	} else {
+		fmt.Println("No deleted files founded")
+	}
+	s.repo.UpdateDeletedStatusInDB(data)
 	return nil
 }
