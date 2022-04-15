@@ -15,7 +15,7 @@ var (
 	helpPath       bool
 	dirPath        string
 	getData        bool
-	getChangedData bool
+	getChangedData string
 	hashAlg        string
 )
 
@@ -25,7 +25,7 @@ func init() {
 	flag.StringVar(&dirPath, "d", "", "Hash of all files through directory path")
 	flag.StringVar(&hashAlg, "a", "", "md5, sha512, default: sha256")
 	flag.BoolVar(&getData, "g", false, "Get all data from database")
-	flag.BoolVar(&getChangedData, "c", false, "Get all changed data from database")
+	flag.StringVar(&getChangedData, "c", "", "Check of changed checksum")
 	flag.BoolVar(&helpPath, "h", false, "info")
 	flag.Parse()
 }

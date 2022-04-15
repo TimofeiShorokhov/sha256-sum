@@ -33,6 +33,14 @@ type HashDataUtils struct {
 	Algorithm string
 }
 
+type ChangedHashes struct {
+	FileName    string
+	OldChecksum string
+	NewChecksum string
+	FilePath    string
+	Algorithm   string
+}
+
 //Generating checksum of file
 func HashOfFile(path string, hashAlg string) HashDataUtils {
 	var res HashDataUtils
@@ -106,7 +114,7 @@ func CatchStopSignal() {
 }
 
 //Function for calling checksum function
-func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData bool, hashAlg string) {
+func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData string, hashAlg string) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -122,6 +130,8 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 		s.SavingData(s.CheckSum(dirPath, hashAlg))
 	case getData:
 		s.GetData()
+	case len(getChangedData) > 0:
+		s.GetChangedData(getChangedData, hashAlg)
 	default:
 		log.Println("Error with flag, use '-h' flag for help ")
 	}
@@ -157,4 +167,42 @@ func (s *HashService) PutData(res []HashDataUtils) error {
 		data = append(data, dat)
 	}
 	return s.repo.PutDataInDB(data)
+}
+
+func (s *HashService) GetChangedData(dir string, alg string) error {
+	var results []ChangedHashes
+	var result ChangedHashes
+	data, err := s.repo.GetDataByPathFromDB(dir, alg)
+
+	if data == nil {
+		log.Println("no data for output")
+		return err
+	}
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	secondData := s.CheckSum(dir, alg)
+	for _, h := range data {
+		for _, c := range secondData {
+			if h.FileName == c.FileName && h.Algorithm == c.Algorithm && h.CheckSum != c.Checksum {
+				result.FileName = h.FileName
+				result.FilePath = h.FilePath
+				result.Algorithm = h.Algorithm
+				result.OldChecksum = h.CheckSum
+				result.NewChecksum = c.Checksum
+				results = append(results, result)
+			}
+		}
+	}
+
+	for _, i := range results {
+		fmt.Printf("Checksum of this file: %s, by this path: %s, was changed. Checksum in database: %s, new checksum: %s, algorithm: %s\n",
+			i.FileName, i.FilePath, i.OldChecksum, i.NewChecksum, i.Algorithm)
+	}
+	if results == nil {
+		fmt.Println("No changes found")
+	}
+	return nil
 }

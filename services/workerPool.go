@@ -15,7 +15,7 @@ func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 	}
 }
 
-//Inserting results of hashing in slice of structures
+//Inserting results of hashing in slice of structures and printing
 func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils {
 	var data []HashDataUtils
 	for {
@@ -25,7 +25,6 @@ func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []
 				return data
 			}
 			data = append(data, hash)
-			fmt.Println(hash)
 
 		case <-ctx.Done():
 			fmt.Println("canceled by user")
@@ -38,6 +37,9 @@ func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []
 
 //Inserting data
 func (s *HashService) SavingData(data []HashDataUtils) {
+	for _, h := range data {
+		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.Checksum, h.Algorithm)
+	}
 	s.PutData(data)
 }
 

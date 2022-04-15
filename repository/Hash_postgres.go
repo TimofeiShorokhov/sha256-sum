@@ -63,3 +63,23 @@ ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum
 	}
 	return transaction.Commit()
 }
+
+func (r *HashPostgres) GetDataByPathFromDB(dir string, alg string) ([]HashData, error) {
+	var hashes []HashData
+
+	selectValue := `Select file, checksum, file_path, algorithm from shasum where file_path like $1 and algorithm = $2`
+
+	get, err := r.db.Query(selectValue, "%"+dir+"%", alg)
+
+	if err != nil {
+		log.Println("error of getting data: " + err.Error())
+		return []HashData{}, err
+	}
+
+	for get.Next() {
+		var hash HashData
+		err = get.Scan(&hash.FileName, &hash.CheckSum, &hash.FilePath, &hash.Algorithm)
+		hashes = append(hashes, hash)
+	}
+	return hashes, nil
+}

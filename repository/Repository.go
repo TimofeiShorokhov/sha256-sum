@@ -16,6 +16,6 @@ func NewRepository(db *sql.DB) *Repository {
 
 type HashRep interface {
 	GetDataFromDB() ([]HashData, error)
-	//PutDataInDB(fileName string, checksum string, filePath string, algorithm string) (int, error)
 	PutDataInDB(data []HashData) error
+	GetDataByPathFromDB(dir string, alg string) ([]HashData, error)
 }
