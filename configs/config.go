@@ -5,10 +5,12 @@ import (
 	"sha256-sum/repository"
 )
 
-func ParseConfig(dir string) (*repository.PostgresDB, error) {
+func ParseConfig() (*repository.PostgresDB, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath(dir)
+	viper.AddConfigPath(".")
+
+	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 

@@ -35,7 +35,7 @@ func init() {
 func main() {
 	start := time.Now()
 
-	cfg, err := configs.ParseConfig("configs/")
+	cfg, err := configs.ParseConfig()
 
 	if err != nil {
 		log.Println("error: " + err.Error())
