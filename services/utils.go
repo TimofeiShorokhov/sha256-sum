@@ -195,14 +195,12 @@ func (s *HashService) GetChangedData(dir string, alg string) error {
 				result.OldChecksum = h.CheckSum
 				result.NewChecksum = c.Checksum
 				results = append(results, result)
+				fmt.Printf("Checksum of this file: %s, by this path: %s, was changed. Checksum in database: %s, new checksum: %s, algorithm: %s\n",
+					result.FileName, result.FilePath, result.OldChecksum, result.NewChecksum, result.Algorithm)
 			}
 		}
 	}
 
-	for _, i := range results {
-		fmt.Printf("Checksum of this file: %s, by this path: %s, was changed. Checksum in database: %s, new checksum: %s, algorithm: %s\n",
-			i.FileName, i.FilePath, i.OldChecksum, i.NewChecksum, i.Algorithm)
-	}
 	if results == nil {
 		fmt.Println("No changes found")
 	}
