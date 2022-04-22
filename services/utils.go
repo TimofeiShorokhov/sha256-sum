@@ -114,7 +114,7 @@ func CatchStopSignal() {
 }
 
 //Function for calling checksum function
-func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string) {
+func (s *HashService) CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -124,8 +124,6 @@ func (s *HashService) CallFunction(filePath string, helpPath bool, dirPath strin
 			})
 		}
 		flag.Usage()
-	case len(filePath) > 0:
-		fmt.Println(HashOfFile(filePath, hashAlg))
 	case len(dirPath) > 0:
 		s.SavingData(s.CheckSum(dirPath, hashAlg))
 	case getData:
@@ -150,6 +148,7 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 
 	if err != nil {
 		fmt.Println(err)
+		return nil, err
 	}
 	for _, h := range data {
 		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, h.Algorithm)
@@ -160,8 +159,8 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 //Inserting data
 func (s *HashService) PutData(res []HashDataUtils) error {
 	var data []repository.HashData
-	var dat repository.HashData
 	for _, h := range res {
+		var dat repository.HashData
 		dat.FileName = h.FileName
 		dat.FilePath = h.FilePath
 		dat.Algorithm = h.Algorithm

@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	filePath       string
 	helpPath       bool
 	dirPath        string
 	getData        bool
@@ -22,7 +21,6 @@ var (
 
 //Creating and parsing flags
 func init() {
-	flag.StringVar(&filePath, "p", "", "Hash through file path")
 	flag.StringVar(&dirPath, "d", "", "Hash of all files through directory path")
 	flag.StringVar(&hashAlg, "a", "", "md5, sha512, default: sha256")
 	flag.StringVar(&getChangedData, "c", "", "Check of changed checksum")
@@ -38,7 +36,7 @@ func main() {
 	cfg, err := configs.ParseConfig()
 
 	if err != nil {
-		log.Println("error: " + err.Error())
+		log.Fatal("error parsing config: " + err.Error())
 	}
 
 	database, err := repository.NewPostgresDB(cfg)
@@ -49,6 +47,6 @@ func main() {
 	ser := services.NewService(repository)
 
 	services.CatchStopSignal()
-	ser.CallFunction(filePath, helpPath, dirPath, getData, getChangedData, updDeleted, hashAlg)
+	ser.CallFunction(helpPath, dirPath, getData, getChangedData, updDeleted, hashAlg)
 	fmt.Println(time.Since(start).Seconds())
 }

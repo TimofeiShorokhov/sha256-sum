@@ -12,7 +12,7 @@ type HashApp interface {
 	PutData(res []HashDataUtils) error
 	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string)
 	CheckSum(path string, hashAlg string) []HashDataUtils
-	CallFunction(filePath string, helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string)
+	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string)
 	Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils
 	UpdateDeletedStatus(dir string, alg string) error
 }

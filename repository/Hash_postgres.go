@@ -59,6 +59,7 @@ ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum
 		_, err := transaction.Exec(query, h.FileName, h.CheckSum, h.FilePath, h.Algorithm)
 		if err != nil {
 			transaction.Rollback()
+			return err
 		}
 	}
 	return transaction.Commit()
@@ -97,6 +98,7 @@ func (r *HashPostgres) UpdateDeletedStatusInDB(data []HashData) error {
 		_, err := transaction.Exec(query, h.FilePath, h.Algorithm)
 		if err != nil {
 			transaction.Rollback()
+			return err
 		}
 	}
 	return transaction.Commit()
