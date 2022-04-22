@@ -1,0 +1,7 @@
+db:
+  port: 5432
+  host: localhost
+  username: tim
+  password: 123
+  dbname: timdb
+  sslmode: disable
