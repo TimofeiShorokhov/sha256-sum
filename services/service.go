@@ -8,21 +8,22 @@ import (
 
 type HashApp interface {
 	GetData() ([]repository.HashData, error)
-	GetChangedData(dir string, alg string) error
+	GetChangedData(dir string) error
 	PutData(res []HashDataUtils) error
-	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string)
-	CheckSum(path string, hashAlg string) []HashDataUtils
-	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, hashAlg string)
+	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils)
+	CheckSum(path string) []HashDataUtils
+	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string)
 	Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils
-	UpdateDeletedStatus(dir string, alg string) error
+	UpdateDeletedStatus(dir string) error
+	HashOfFile(path string) HashDataUtils
 }
 
 type Service struct {
 	HashApp
 }
 
-func NewService(rep *repository.Repository) *Service {
+func NewService(rep *repository.Repository, algo string) *Service {
 	return &Service{
-		NewHashService(*rep),
+		NewHashService(*rep, algo),
 	}
 }

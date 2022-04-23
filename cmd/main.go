@@ -44,9 +44,9 @@ func main() {
 		log.Fatal("failed to initialize dao:", err.Error())
 	}
 	repository := repository.NewRepository(database)
-	ser := services.NewService(repository)
+	ser := services.NewService(repository, hashAlg)
 
 	services.CatchStopSignal()
-	ser.CallFunction(helpPath, dirPath, getData, getChangedData, updDeleted, hashAlg)
+	ser.CallFunction(helpPath, dirPath, getData, getChangedData, updDeleted)
 	fmt.Println(time.Since(start).Seconds())
 }
