@@ -21,7 +21,7 @@ type HashService struct {
 func NewHashService(repo repository.Repository, algo string) *HashService {
 	h, err := hasher.New(algo)
 	if err != nil {
-		return nil
+		log.Fatalf("err: %s", err)
 	}
 	return &HashService{
 		repo:   repo,
@@ -141,7 +141,7 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 		return nil, err
 	}
 	for _, h := range data {
-		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, h.Algorithm)
+		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, s.alg)
 	}
 	return data, nil
 }

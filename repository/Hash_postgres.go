@@ -52,7 +52,8 @@ func (r *HashPostgres) PutDataInDB(data []HashData) error {
 	if err != nil {
 		log.Println("error with database: " + err.Error())
 	}
-	query := `INSERT INTO shasum(file,checksum,file_path,algorithm) VALUES ($1,$2,$3,$4)`
+	query := `INSERT INTO shasum(file,checksum,file_path,algorithm) VALUES ($1,$2,$3,$4) 
+ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum`
 
 	for _, h := range data {
 		_, err := transaction.Exec(query, h.FileName, h.CheckSum, h.FilePath, h.Algorithm)
