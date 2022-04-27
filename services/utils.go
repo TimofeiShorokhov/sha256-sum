@@ -141,7 +141,9 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 		return nil, err
 	}
 	for _, h := range data {
-		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, s.alg)
+		if h.Algorithm == s.alg {
+			fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.CheckSum, h.Algorithm)
+		}
 	}
 	return data, nil
 }
