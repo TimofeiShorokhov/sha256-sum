@@ -8,10 +8,10 @@ import (
 )
 
 //Workers for goroutines
-func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils, hashAlg string) {
+func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils) {
 	defer wg.Done()
 	for j := range jobs {
-		results <- HashOfFile(j, hashAlg)
+		results <- s.HashOfFile(j)
 	}
 }
 
@@ -44,7 +44,7 @@ func (s *HashService) SavingData(data []HashDataUtils) {
 }
 
 //Hashing files with workers
-func (s *HashService) CheckSum(path string, hashAlg string) []HashDataUtils {
+func (s *HashService) CheckSum(path string) []HashDataUtils {
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -62,7 +62,7 @@ func (s *HashService) CheckSum(path string, hashAlg string) []HashDataUtils {
 		var wg sync.WaitGroup
 		for w := 1; w <= 10; w++ {
 			wg.Add(1)
-			go s.Worker(&wg, jobs, results, hashAlg)
+			go s.Worker(&wg, jobs, results)
 		}
 		defer close(results)
 		wg.Wait()

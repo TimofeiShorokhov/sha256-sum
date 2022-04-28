@@ -7,7 +7,7 @@ import (
 
 func ParseConfig() (*repository.PostgresDB, error) {
 	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigType("yml")
 	viper.AddConfigPath(".")
 
 	viper.AutomaticEnv()
