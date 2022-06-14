@@ -15,8 +15,10 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 type HashRep interface {
+	CheckDB() int
 	GetDataFromDB() ([]HashData, error)
 	PutDataInDB(data []HashData) error
-	GetDataByPathFromDB(dir string, alg string) ([]HashData, error)
+	GetDataByPathFromDB(alg string) ([]HashData, error)
 	UpdateDeletedStatusInDB(data []HashData) error
+	Truncate() error
 }

@@ -162,46 +162,52 @@ func (s *HashService) PutData(res []HashDataUtils) error {
 	return s.repo.PutDataInDB(data)
 }
 
-func (s *HashService) GetChangedData(dir string) error {
-	var results []ChangedHashes
-	var result ChangedHashes
-	data, err := s.repo.GetDataByPathFromDB(dir, s.alg)
+func (s *HashService) GetChangedData(dir string) (int, error) {
+
+	var code int
+
+	code = 0
+
+	data, err := s.repo.GetDataByPathFromDB(s.alg)
 
 	if data == nil {
-		log.Println("no data for output")
-		return err
+		log.Fatalln("no data for output")
 	}
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalln(err)
 	}
 
 	secondData := s.CheckSum(dir)
 	for _, h := range data {
 		for _, c := range secondData {
-			if h.FileName == c.FileName && h.Algorithm == c.Algorithm && h.CheckSum != c.Checksum {
-				result.FileName = h.FileName
-				result.FilePath = h.FilePath
-				result.Algorithm = h.Algorithm
-				result.OldChecksum = h.CheckSum
-				result.NewChecksum = c.Checksum
-				results = append(results, result)
-				fmt.Printf("Checksum of this file: %s, by this path: %s, was changed. Checksum in database: %s, new checksum: %s, algorithm: %s\n",
-					result.FileName, result.FilePath, result.OldChecksum, result.NewChecksum, result.Algorithm)
+			switch {
+			case h.FileName == c.FileName:
+				if h.FilePath != c.FilePath || h.CheckSum != c.Checksum {
+					fmt.Printf("something with this file: %s\n", c.FileName)
+					code = 1
+				}
+			case h.FilePath == c.FilePath:
+				if h.FileName != c.FileName || h.CheckSum != c.Checksum {
+					fmt.Printf("something with this file by this path: %s\n", c.FilePath)
+					code = 1
+				}
+			case h.CheckSum == c.Checksum:
+				if h.FileName != c.FileName || h.FilePath != c.FilePath {
+					fmt.Printf("something with this file by this checksum: %s\n", c.Checksum)
+					code = 1
+				}
 			}
 		}
 	}
 
-	if results == nil {
-		fmt.Println("No changes found")
-	}
-	return nil
+	return code, nil
 }
 
 func (s *HashService) UpdateDeletedStatus(dir string) error {
 	var results []ChangedHashes
 	var result ChangedHashes
-	databaseData, err := s.repo.GetDataByPathFromDB(dir, s.alg)
+	databaseData, err := s.repo.GetDataByPathFromDB(s.alg)
 
 	if databaseData == nil {
 		log.Println("no data for output")
@@ -243,4 +249,22 @@ func (s *HashService) UpdateDeletedStatus(dir string) error {
 	}
 	s.repo.UpdateDeletedStatusInDB(data)
 	return nil
+}
+
+func (s *HashService) Operations(code int, path string) {
+	switch {
+	case code == 0:
+		s.SavingData(s.CheckSum(path))
+	case code == 1:
+		check, err := s.GetChangedData(path)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if check == 0 {
+			fmt.Println("checksum check was successful, nothing changed ")
+		} else if check == 1 {
+			s.repo.Truncate()
+			fmt.Println("database has changes, truncate successful")
+		}
+	}
 }

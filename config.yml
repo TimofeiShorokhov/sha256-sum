@@ -1,6 +1,6 @@
 db:
   port: 5432
-  host: postgres
+  host: localhost
   username: tim
   password: 123
   dbname: timdb

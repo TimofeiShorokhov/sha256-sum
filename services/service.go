@@ -8,7 +8,7 @@ import (
 
 type HashApp interface {
 	GetData() ([]repository.HashData, error)
-	GetChangedData(dir string) error
+	GetChangedData(dir string) (int, error)
 	PutData(res []HashDataUtils) error
 	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils)
 	CheckSum(path string) []HashDataUtils
@@ -16,6 +16,8 @@ type HashApp interface {
 	Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils
 	UpdateDeletedStatus(dir string) error
 	HashOfFile(path string) HashDataUtils
+	SavingData(data []HashDataUtils)
+	Operations(code int, path string)
 }
 
 type Service struct {
