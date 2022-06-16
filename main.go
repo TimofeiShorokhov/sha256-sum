@@ -29,71 +29,6 @@ func init() {
 	flag.Parse()
 }
 
-/*
-func main() {
-	start := time.Now()
-
-	cfg, err := configs.ParseConfig()
-
-	if err != nil {
-		log.Fatal("error parsing config: " + err.Error())
-	}
-
-	database, err := repository.NewPostgresDB(cfg)
-	if err != nil {
-		log.Fatal("failed to initialize dao:", err.Error())
-	}
-	repository := repository.NewRepository(database)
-	ser := services.NewService(repository, hashAlg)
-
-	services.CatchStopSignal()
-	ser.CallFunction(helpPath, dirPath, getData, getChangedData, updDeleted)
-	fmt.Println(time.Since(start).Seconds())
-}
-
-
-*/
-/*
-func main() {
-	start := time.Now()
-
-	hashAlg = "sha256"
-	path := "/home/tshorokhov@scnsoft.com/Pictures"
-
-	cfg, err := configs.ParseConfig()
-
-	if err != nil {
-		log.Fatal("error parsing config: " + err.Error())
-	}
-
-	database, err := repository.NewPostgresDB(cfg)
-	if err != nil {
-		log.Fatal("failed to initialize dao:", err.Error())
-	}
-	repository := repository.NewRepository(database)
-	ser := services.NewService(repository, hashAlg)
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c)
-
-	ticker := time.NewTicker(10 * time.Second)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				ser.Operations(repository.CheckDB(), path)
-			}
-		}
-	}()
-
-	<-c
-	ticker.Stop()
-
-	services.CatchStopSignal()
-	fmt.Println(time.Since(start).Seconds())
-}
-*/
-
 func main() {
 	hashAlg = "sha256"
 	var err error
@@ -110,6 +45,6 @@ func main() {
 
 	repository := repository.NewRepository(database)
 	ser := services.NewService(repository, hashAlg)
-	ser.Operations(repository.CheckDB(), "/")
+	ser.Operations(repository.CheckDB(), "/root")
 
 }

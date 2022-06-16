@@ -8,7 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
+	//"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
 	"os/signal"
@@ -270,7 +271,7 @@ func (s *HashService) Podkicker() {
 
 	// Connect to Kubernetes API
 	log.Printf("### 🌀 Attempting to use in cluster config")
-	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBE_CONFIG_PATH"))
+	config, err := rest.InClusterConfig()
 
 	if err != nil {
 		log.Fatalln(err)
@@ -305,32 +306,19 @@ func (s *HashService) Podkicker() {
 func (s *HashService) Operations(code int, path string) {
 	switch {
 	case code == 0:
-		hash := HashDataUtils{
-			FileName:  "1",
-			Checksum:  "hashsum1234567",
-			FilePath:  "/home/tshorokhov@scnsoft.com/Pictures/1",
-			Algorithm: "sha256",
-		}
-		var hashes []HashDataUtils
-		hashes = append(hashes, hash)
-		//s.SavingData(s.CheckSum(path))
-		s.SavingData(hashes)
+		s.SavingData(s.CheckSum(path))
 	case code == 1:
-		fmt.Println("database not empty")
-		/*
-			check, err := s.GetChangedData(path)
-			if err != nil {
-				log.Fatalln(err)
-			}
+		check, err := s.GetChangedData(path)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
-			if check == 0 {
-				fmt.Println("checksum check was successful, nothing changed ")
-			} else if check == 1 {
-				s.repo.Truncate()
-				s.Podkicker()
-				fmt.Println("database has changes, truncate successful")
-			}
-
-		*/
+		if check == 0 {
+			fmt.Println("checksum check was successful, nothing changed ")
+		} else if check == 1 {
+			s.repo.Truncate()
+			s.Podkicker()
+			fmt.Println("database has changes, truncate successful")
+		}
 	}
 }
