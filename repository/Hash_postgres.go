@@ -55,7 +55,7 @@ func (r *HashPostgres) CheckDB() int {
 func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 	var hashes []HashData
 
-	selectValue := `Select file, checksum, file_path, algorithm from shasum`
+	selectValue := `Select file, checksum, file_path, algorithm from shasum;`
 
 	get, err := r.db.Query(selectValue)
 

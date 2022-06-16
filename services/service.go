@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"sha256-sum/repository"
 	"sync"
 )
@@ -13,7 +12,7 @@ type HashApp interface {
 	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils)
 	CheckSum(path string) []HashDataUtils
 	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string)
-	Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils
+	Result(results chan HashDataUtils) []HashDataUtils
 	UpdateDeletedStatus(dir string) error
 	HashOfFile(path string) HashDataUtils
 	SavingData(data []HashDataUtils)

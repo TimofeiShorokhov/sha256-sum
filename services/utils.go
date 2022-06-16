@@ -1,8 +1,14 @@
 package services
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"github.com/joho/godotenv"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +16,7 @@ import (
 	"sha256-sum/errors"
 	"sha256-sum/hasher"
 	"sha256-sum/repository"
+	"time"
 )
 
 type HashService struct {
@@ -251,20 +258,79 @@ func (s *HashService) UpdateDeletedStatus(dir string) error {
 	return nil
 }
 
+func (s *HashService) Podkicker() {
+	var err error
+	err = godotenv.Load()
+
+	if err != nil {
+		log.Fatalf("Error getting env, %v", err)
+	}
+
+	log.Printf("### 🚀 PodKicker %s starting...", "0.0.0")
+
+	// Connect to Kubernetes API
+	log.Printf("### 🌀 Attempting to use in cluster config")
+	config, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBE_CONFIG_PATH"))
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf("### 💻 Connecting to Kubernetes API, using host: %s", config.Host)
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	isRestarting := false
+
+	if isRestarting {
+		return
+	}
+
+	log.Print("### ⛔ Detected file change")
+
+	patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
+
+	var err1 error
+	_, err1 = clientset.AppsV1().Deployments(os.Getenv("NAMESPACE")).Patch(context.Background(), os.Getenv("DEPLOYMENT_NAME"), types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{FieldManager: "kubectl-rollout"})
+	if err1 != nil {
+		log.Printf("### 👎 Warning: Failed to patch %s, restart failed: %v", "deployment", err1)
+	} else {
+		isRestarting = true
+		log.Printf("### ✅ Target %s, named %s was restarted!", "deployment", os.Getenv("DEPLOYMENT_NAME"))
+	}
+}
+
 func (s *HashService) Operations(code int, path string) {
 	switch {
 	case code == 0:
-		s.SavingData(s.CheckSum(path))
+		hash := HashDataUtils{
+			FileName:  "1",
+			Checksum:  "hashsum1234567",
+			FilePath:  "/home/tshorokhov@scnsoft.com/Pictures/1",
+			Algorithm: "sha256",
+		}
+		var hashes []HashDataUtils
+		hashes = append(hashes, hash)
+		//s.SavingData(s.CheckSum(path))
+		s.SavingData(hashes)
 	case code == 1:
-		check, err := s.GetChangedData(path)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if check == 0 {
-			fmt.Println("checksum check was successful, nothing changed ")
-		} else if check == 1 {
-			s.repo.Truncate()
-			fmt.Println("database has changes, truncate successful")
-		}
+		fmt.Println("database not empty")
+		/*
+			check, err := s.GetChangedData(path)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			if check == 0 {
+				fmt.Println("checksum check was successful, nothing changed ")
+			} else if check == 1 {
+				s.repo.Truncate()
+				s.Podkicker()
+				fmt.Println("database has changes, truncate successful")
+			}
+
+		*/
 	}
 }

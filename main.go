@@ -2,14 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
-	"os/signal"
-	"sha256-sum/configs"
 	"sha256-sum/repository"
 	"sha256-sum/services"
-	"time"
 )
 
 var (
@@ -56,7 +53,7 @@ func main() {
 
 
 */
-
+/*
 func main() {
 	start := time.Now()
 
@@ -94,4 +91,25 @@ func main() {
 
 	services.CatchStopSignal()
 	fmt.Println(time.Since(start).Seconds())
+}
+*/
+
+func main() {
+	hashAlg = "sha256"
+	var err error
+	err = godotenv.Load()
+
+	if err != nil {
+		log.Fatalf("Error getting env, %v", err)
+	}
+	database, err := repository.ConnToDb(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
+
+	if err != nil {
+		log.Fatal("failed to initialize dao:", err.Error())
+	}
+
+	repository := repository.NewRepository(database)
+	ser := services.NewService(repository, hashAlg)
+	ser.Operations(repository.CheckDB(), "/")
+
 }
