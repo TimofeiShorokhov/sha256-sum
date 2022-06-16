@@ -1,7 +1,6 @@
 package hasher
 
 import (
-	"errors"
 	"io"
 )
 
@@ -18,7 +17,7 @@ func New(algo string) (hasher Hasher, err error) {
 	case "sha256", "SHA256":
 		hasher = NewSha256()
 	default:
-		err = errors.New("no such algorithm")
+		hasher = NewSha256()
 	}
 	return
 }

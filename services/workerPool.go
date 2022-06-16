@@ -1,9 +1,7 @@
 package services
 
 import (
-	"context"
 	"fmt"
-	"os"
 	"sync"
 )
 
@@ -16,7 +14,7 @@ func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 }
 
 //Inserting results of hashing in slice of structures and printing
-func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []HashDataUtils {
+func (s *HashService) Result(results chan HashDataUtils) []HashDataUtils {
 	var data []HashDataUtils
 	for {
 		select {
@@ -25,11 +23,6 @@ func (s *HashService) Result(ctx context.Context, results chan HashDataUtils) []
 				return data
 			}
 			data = append(data, hash)
-
-		case <-ctx.Done():
-			fmt.Println("canceled by user")
-			os.Exit(1)
-			return []HashDataUtils{}
 		}
 
 	}
@@ -46,14 +39,6 @@ func (s *HashService) SavingData(data []HashDataUtils) {
 //Hashing files with workers
 func (s *HashService) CheckSum(path string) []HashDataUtils {
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-
-	go func() {
-		fmt.Scanln()
-		cancel()
-	}()
-
 	jobs := make(chan string)
 	results := make(chan HashDataUtils)
 
@@ -67,5 +52,5 @@ func (s *HashService) CheckSum(path string) []HashDataUtils {
 		defer close(results)
 		wg.Wait()
 	}()
-	return s.Result(ctx, results)
+	return s.Result(results)
 }
