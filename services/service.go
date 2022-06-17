@@ -17,7 +17,8 @@ type HashApp interface {
 	HashOfFile(path string) HashDataUtils
 	SavingData(data []HashDataUtils)
 	Operations(code int, path string)
-	Podkicker()
+	Podkicker(code int)
+	PutPod(name string) error
 }
 
 type Service struct {

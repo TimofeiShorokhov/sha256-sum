@@ -46,5 +46,4 @@ func main() {
 	repository := repository.NewRepository(database)
 	ser := services.NewService(repository, hashAlg)
 	ser.Operations(repository.CheckDB(), "/root")
-
 }

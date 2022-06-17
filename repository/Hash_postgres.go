@@ -92,6 +92,22 @@ ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum
 	}
 	return transaction.Commit()
 }
+func (r *HashPostgres) PutPodInDB(name string) error {
+
+	transaction, err := r.db.Begin()
+
+	if err != nil {
+		log.Println("error with database: " + err.Error())
+	}
+	query := `INSERT INTO shasum(file,checksum,file_path,algorithm) VALUES ($1,$2,$3,$4) 
+ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum`
+	_, err = transaction.Exec(query, name, "12345", "path", "sha256")
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+	return transaction.Commit()
+}
 
 func (r *HashPostgres) GetDataByPathFromDB(alg string) ([]HashData, error) {
 	var hashes []HashData

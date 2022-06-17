@@ -21,4 +21,5 @@ type HashRep interface {
 	GetDataByPathFromDB(alg string) ([]HashData, error)
 	UpdateDeletedStatusInDB(data []HashData) error
 	Truncate() error
+	PutPodInDB(name string) error
 }
