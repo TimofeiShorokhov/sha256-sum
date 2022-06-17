@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/joho/godotenv"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -259,15 +258,12 @@ func (s *HashService) UpdateDeletedStatus(dir string) error {
 	return nil
 }
 
-func (s *HashService) Podkicker() {
-	var err error
-	err = godotenv.Load()
-
-	if err != nil {
-		log.Fatalf("Error getting env, %v", err)
-	}
+func (s *HashService) Podkicker(code int) {
 
 	log.Printf("### 🚀 PodKicker %s starting...", "0.0.0")
+
+	targetName := os.Getenv("POD_NAME")
+	namespace := os.Getenv("NAMESPACE")
 
 	// Connect to Kubernetes API
 	log.Printf("### 🌀 Attempting to use in cluster config")
@@ -282,25 +278,34 @@ func (s *HashService) Podkicker() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if code == 1 {
+		isRestarting := false
 
-	isRestarting := false
+		if isRestarting {
+			return
+		}
 
-	if isRestarting {
-		return
+		log.Print("### ⛔ Detected file change")
+
+		patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
+
+		var err1 error
+		_, err1 = clientset.AppsV1().Deployments(namespace).Patch(context.Background(), targetName, types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{FieldManager: "kubectl-rollout"})
+		if err1 != nil {
+			log.Printf("### 👎 Warning: Failed to patch %s, restart failed: %v", "deployment", err1)
+		} else {
+			isRestarting = true
+			log.Printf("### ✅ Target %s, named %s was restarted!", "deployment", targetName)
+		}
 	}
-
-	log.Print("### ⛔ Detected file change")
-
-	patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
-
-	var err1 error
-	_, err1 = clientset.AppsV1().Deployments(os.Getenv("NAMESPACE")).Patch(context.Background(), os.Getenv("DEPLOYMENT_NAME"), types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{FieldManager: "kubectl-rollout"})
-	if err1 != nil {
-		log.Printf("### 👎 Warning: Failed to patch %s, restart failed: %v", "deployment", err1)
-	} else {
-		isRestarting = true
-		log.Printf("### ✅ Target %s, named %s was restarted!", "deployment", os.Getenv("DEPLOYMENT_NAME"))
+	if code == 0 {
+		s.PutPod(targetName)
+		log.Printf("### ✅ Pod name was inserted: %s", targetName)
 	}
+}
+
+func (s *HashService) PutPod(name string) error {
+	return s.repo.PutPodInDB(name)
 }
 
 func (s *HashService) Operations(code int, path string) {
@@ -312,12 +317,12 @@ func (s *HashService) Operations(code int, path string) {
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		if check == 0 {
+			s.Podkicker(0)
 			fmt.Println("checksum check was successful, nothing changed ")
 		} else if check == 1 {
 			s.repo.Truncate()
-			s.Podkicker()
+			s.Podkicker(1)
 			fmt.Println("database has changes, truncate successful")
 		}
 	}
