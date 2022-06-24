@@ -2,11 +2,12 @@ package services
 
 import (
 	"fmt"
+	"sha256-sum/models"
 	"sync"
 )
 
 //Workers for goroutines
-func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils) {
+func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- models.HashDataUtils) {
 	defer wg.Done()
 	for j := range jobs {
 		results <- s.HashOfFile(j)
@@ -14,8 +15,8 @@ func (s *HashService) Worker(wg *sync.WaitGroup, jobs <-chan string, results cha
 }
 
 //Inserting results of hashing in slice of structures and printing
-func (s *HashService) Result(results chan HashDataUtils) []HashDataUtils {
-	var data []HashDataUtils
+func (s *HashService) Result(results chan models.HashDataUtils) []models.HashDataUtils {
+	var data []models.HashDataUtils
 	for {
 		select {
 		case hash, ok := <-results:
@@ -29,18 +30,18 @@ func (s *HashService) Result(results chan HashDataUtils) []HashDataUtils {
 }
 
 //Inserting data
-func (s *HashService) SavingData(data []HashDataUtils) {
+func (s *HashService) SavingData(data []models.HashDataUtils, podData models.PodInfo) {
 	for _, h := range data {
 		fmt.Printf("File name: %s, Checksum: %s, Algorithm: %s\n", h.FileName, h.Checksum, h.Algorithm)
 	}
-	s.PutData(data)
+	s.PutData(data, podData)
 }
 
 //Hashing files with workers
-func (s *HashService) CheckSum(path string) []HashDataUtils {
+func (s *HashService) CheckSum(path string) []models.HashDataUtils {
 
 	jobs := make(chan string)
-	results := make(chan HashDataUtils)
+	results := make(chan models.HashDataUtils)
 
 	go HashOfDir(path, jobs)
 	go func() {

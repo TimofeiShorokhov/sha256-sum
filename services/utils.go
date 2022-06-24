@@ -1,13 +1,10 @@
 package services
 
 import (
-	"context"
 	"flag"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"sha256-sum/models"
+
 	//"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
@@ -16,7 +13,6 @@ import (
 	"sha256-sum/errors"
 	"sha256-sum/hasher"
 	"sha256-sum/repository"
-	"time"
 )
 
 type HashService struct {
@@ -37,29 +33,14 @@ func NewHashService(repo repository.Repository, algo string) *HashService {
 	}
 }
 
-type HashDataUtils struct {
-	FileName  string
-	Checksum  string
-	FilePath  string
-	Algorithm string
-}
-
-type ChangedHashes struct {
-	FileName    string
-	OldChecksum string
-	NewChecksum string
-	FilePath    string
-	Algorithm   string
-}
-
 //Generating checksum of file
-func (s *HashService) HashOfFile(path string) HashDataUtils {
-	var res HashDataUtils
+func (s *HashService) HashOfFile(path string) models.HashDataUtils {
+	var res models.HashDataUtils
 
 	file, err := os.Open(path)
 	if err != nil {
 		errors.CheckErr(err)
-		return HashDataUtils{}
+		return models.HashDataUtils{}
 	}
 
 	defer file.Close()
@@ -68,7 +49,7 @@ func (s *HashService) HashOfFile(path string) HashDataUtils {
 
 	if err != nil {
 		errors.CheckErr(err)
-		return HashDataUtils{}
+		return models.HashDataUtils{}
 	}
 
 	res.FileName = filepath.Base(path)
@@ -111,7 +92,7 @@ func CatchStopSignal() {
 }
 
 //Function for calling checksum function
-func (s *HashService) CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string) {
+func (s *HashService) CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, podData models.PodInfo) {
 	switch {
 	case helpPath:
 		flag.Usage = func() {
@@ -122,7 +103,7 @@ func (s *HashService) CallFunction(helpPath bool, dirPath string, getData bool, 
 		}
 		flag.Usage()
 	case len(dirPath) > 0:
-		s.SavingData(s.CheckSum(dirPath))
+		s.SavingData(s.CheckSum(dirPath), podData)
 	case getData:
 		s.GetData()
 	case len(getChangedData) > 0:
@@ -135,7 +116,7 @@ func (s *HashService) CallFunction(helpPath bool, dirPath string, getData bool, 
 }
 
 //Getting data
-func (s *HashService) GetData() ([]repository.HashData, error) {
+func (s *HashService) GetData() ([]models.HashData, error) {
 	data, err := s.repo.GetDataFromDB()
 
 	if data == nil {
@@ -156,17 +137,22 @@ func (s *HashService) GetData() ([]repository.HashData, error) {
 }
 
 //Inserting data
-func (s *HashService) PutData(res []HashDataUtils) error {
-	var data []repository.HashData
+func (s *HashService) PutData(res []models.HashDataUtils, podData models.PodInfo) error {
+	var data []models.HashData
+	var podStruct models.PodData
+	podStruct.PodName = podData.PodName
+	podStruct.ContainerName = podData.ContainerName
+	podStruct.ImageName = podData.ImageName
+	podStruct.CreationTime = podData.CreationTime
 	for _, h := range res {
-		var dat repository.HashData
+		var dat models.HashData
 		dat.FileName = h.FileName
 		dat.FilePath = h.FilePath
 		dat.Algorithm = h.Algorithm
 		dat.CheckSum = h.Checksum
 		data = append(data, dat)
 	}
-	return s.repo.PutDataInDB(data)
+	return s.repo.PutDataInDB(data, podStruct)
 }
 
 func (s *HashService) GetChangedData(dir string) (int, error) {
@@ -207,13 +193,16 @@ func (s *HashService) GetChangedData(dir string) (int, error) {
 			}
 		}
 	}
+	if code == 0 {
+		fmt.Println("files not changed, check successful")
+	}
 
 	return code, nil
 }
 
 func (s *HashService) UpdateDeletedStatus(dir string) error {
-	var results []ChangedHashes
-	var result ChangedHashes
+	var results []models.ChangedHashes
+	var result models.ChangedHashes
 	databaseData, err := s.repo.GetDataByPathFromDB(s.alg)
 
 	if databaseData == nil {
@@ -240,8 +229,8 @@ func (s *HashService) UpdateDeletedStatus(dir string) error {
 		}
 	}
 
-	var data []repository.HashData
-	var dat repository.HashData
+	var data []models.HashData
+	var dat models.HashData
 	for _, h := range results {
 		dat.FilePath = h.FilePath
 		dat.Algorithm = h.Algorithm
@@ -256,74 +245,4 @@ func (s *HashService) UpdateDeletedStatus(dir string) error {
 	}
 	s.repo.UpdateDeletedStatusInDB(data)
 	return nil
-}
-
-func (s *HashService) Podkicker(code int) {
-
-	log.Printf("### 🚀 PodKicker %s starting...", "0.0.0")
-
-	targetName := os.Getenv("POD_NAME")
-	namespace := os.Getenv("NAMESPACE")
-
-	// Connect to Kubernetes API
-	log.Printf("### 🌀 Attempting to use in cluster config")
-	config, err := rest.InClusterConfig()
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	log.Printf("### 💻 Connecting to Kubernetes API, using host: %s", config.Host)
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if code == 1 {
-		isRestarting := false
-
-		if isRestarting {
-			return
-		}
-
-		log.Print("### ⛔ Detected file change")
-
-		patchData := fmt.Sprintf(`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":"%s"}}}}}`, time.Now().Format(time.RFC3339))
-
-		var err1 error
-		_, err1 = clientset.AppsV1().Deployments(namespace).Patch(context.Background(), targetName, types.StrategicMergePatchType, []byte(patchData), metav1.PatchOptions{FieldManager: "kubectl-rollout"})
-		if err1 != nil {
-			log.Printf("### 👎 Warning: Failed to patch %s, restart failed: %v", "deployment", err1)
-		} else {
-			isRestarting = true
-			log.Printf("### ✅ Target %s, named %s was restarted!", "deployment", targetName)
-		}
-	}
-	if code == 0 {
-		s.PutPod(targetName)
-		log.Printf("### ✅ Pod name was inserted: %s", targetName)
-	}
-}
-
-func (s *HashService) PutPod(name string) error {
-	return s.repo.PutPodInDB(name)
-}
-
-func (s *HashService) Operations(code int, path string) {
-	switch {
-	case code == 0:
-		s.SavingData(s.CheckSum(path))
-	case code == 1:
-		check, err := s.GetChangedData(path)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if check == 0 {
-			s.Podkicker(0)
-			fmt.Println("checksum check was successful, nothing changed ")
-		} else if check == 1 {
-			s.repo.Truncate()
-			s.Podkicker(1)
-			fmt.Println("database has changes, truncate successful")
-		}
-	}
 }

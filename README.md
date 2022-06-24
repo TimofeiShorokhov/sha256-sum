@@ -7,55 +7,51 @@ Improved algorithms: sha256, sha512, md5.
 ### Installation of app
 
 `````
-go mod download
-go build cmd/main.go
+local usage: go run cmd/main.go
+docker: docker build -t <image_name> .
+kubernetes:
+kubectl apply -f manifests/configMap.yaml
+kubectl apply -f manifests/service.yaml
+kubectl apply -f manifests/deploy.yaml
 `````
-To set path to files/directory for docker change .env file
+To set path to files/directory for kubernetes change MOUNT_PATH in configMap file
 ````
-TAG=your_local_path
+MOUNT_PATH: "/root"
 ````
 ### Run database
 ```
-docker-compose build
-docker-compose up
+kubectl apply -f manifests/postgres-db-secret.yaml
+kubectl apply -f manifests/postgres-db-service.yaml
+kubectl apply -f manifests/postgres-db-deployment.yaml
 ```
 
-## How to use app
+## How to use app in a local
 
-1. To check checksum of file or files on directory with different algorithm use -d flag with -a flag , example:
+1. To check checksum of file or files on directory with different algorithm use -d flag , example:
 ````
-go run cmd/main.go -d="path" -a="algorithm"
+go run cmd/main.go -d="path"
 or
-go run cmd/main.go -d="path/file_name" -a="algorithm"
-via docker
-docker-compose run timdb -d=/local/"your_path" -a="algorithm"
+go run cmd/main.go -d="path/file_name"
 ````
 
 2. If you want to check if the checksum was changed, use -c flag , example:
 ````
-go run cmd/main.go -c="path" -a="algorithm"
-via docker
-docker-compose run timdb -c=/local/"your_path" -a="algorithm"
+go run cmd/main.go -c="path"
 ````
 
 3. To log data from database use -g flag, example:
 ``````
-go run cmd/main.go -g -a="algorithm"
-via docker
-docker-compose run timdb -g=/local/"your_path" -a="algorithm"
+go run cmd/main.go -g
 ``````
 
 4. To get help with commands use -h flag, example:
 ```
 go run cmd/main.go -h
-via docker
-docker-compose run timdb -h
 ```
 
-## Documentation
+5. To check if file deleted and update deleted status, use -u flag with path, example:
+```
+go run cmd/main.go -u="path"
+```
 
-To see documentation use:
-````
-godoc -http=:port(use port like 6060 or other)
-````
-And then visit "localhost:port"
+6. If you want to change algorithm, change ALG variable in .env file

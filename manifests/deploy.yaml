@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      serviceAccountName: podkicker
+      containers:
+        - name: nginx
+          image: nginx
+        - name: podkicker
+          image: full:latest
+          imagePullPolicy: Never
+          envFrom:
+            - secretRef:
+                name: postgres-secret
+            - configMapRef:
+                name: config
+          command: [ "sh","-c","./main -d $MOUNT_PATH;"]
+          env:
+            - name: POD_NAME
+              value: "demo"
+            - name: NAMESPACE
+              value: "default"
+          resources:
+            limits:
+              memory: "50Mi"
+              cpu: "50m"
+
