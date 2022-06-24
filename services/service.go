@@ -1,24 +1,26 @@
 package services
 
 import (
+	"k8s.io/client-go/kubernetes"
+	"sha256-sum/models"
 	"sha256-sum/repository"
 	"sync"
 )
 
 type HashApp interface {
-	GetData() ([]repository.HashData, error)
+	GetData() ([]models.HashData, error)
 	GetChangedData(dir string) (int, error)
-	PutData(res []HashDataUtils) error
-	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- HashDataUtils)
-	CheckSum(path string) []HashDataUtils
-	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string)
-	Result(results chan HashDataUtils) []HashDataUtils
+	PutData(res []models.HashDataUtils, podData models.PodInfo) error
+	Worker(wg *sync.WaitGroup, jobs <-chan string, results chan<- models.HashDataUtils)
+	CheckSum(path string) []models.HashDataUtils
+	CallFunction(helpPath bool, dirPath string, getData bool, getChangedData string, updDeleted string, podData models.PodInfo)
+	Result(results chan models.HashDataUtils) []models.HashDataUtils
 	UpdateDeletedStatus(dir string) error
-	HashOfFile(path string) HashDataUtils
-	SavingData(data []HashDataUtils)
+	HashOfFile(path string) models.HashDataUtils
+	SavingData(data []models.HashDataUtils, podData models.PodInfo)
 	Operations(code int, path string)
-	Podkicker(code int)
-	PutPod(name string) error
+	Podkicker(code int, path string)
+	ConnToPod() *kubernetes.Clientset
 }
 
 type Service struct {

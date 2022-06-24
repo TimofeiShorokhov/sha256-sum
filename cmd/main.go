@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"sha256-sum/models"
 	"sha256-sum/repository"
 	"sha256-sum/services"
 )
@@ -44,5 +45,7 @@ func main() {
 
 	repository := repository.NewRepository(database)
 	ser := services.NewService(repository, os.Getenv("ALG"))
-	ser.Operations(repository.CheckDB(), dirPath)
+
+	ser.CallFunction(helpPath, dirPath, getData, getChangedData, updDeleted, models.PodInfo{})
+
 }

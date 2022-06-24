@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"sha256-sum/models"
 )
 
 type Repository struct {
@@ -16,10 +17,10 @@ func NewRepository(db *sql.DB) *Repository {
 
 type HashRep interface {
 	CheckDB() int
-	GetDataFromDB() ([]HashData, error)
-	PutDataInDB(data []HashData) error
-	GetDataByPathFromDB(alg string) ([]HashData, error)
-	UpdateDeletedStatusInDB(data []HashData) error
+	GetDataFromDB() ([]models.HashData, error)
+	PutDataInDB(data []models.HashData, podData models.PodData) error
+	GetDataByPathFromDB(alg string) ([]models.HashData, error)
+	UpdateDeletedStatusInDB(data []models.HashData) error
 	Truncate() error
 	PutPodInDB(name string) error
 }

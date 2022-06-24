@@ -4,18 +4,11 @@ package repository
 import (
 	"database/sql"
 	"log"
+	"sha256-sum/models"
 )
 
 type HashPostgres struct {
 	db *sql.DB
-}
-
-type HashData struct {
-	Id        int
-	FileName  string
-	CheckSum  string
-	FilePath  string
-	Algorithm string
 }
 
 //Creating database object
@@ -52,8 +45,8 @@ func (r *HashPostgres) CheckDB() int {
 }
 
 //Getting data of all hashes from database
-func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
-	var hashes []HashData
+func (r *HashPostgres) GetDataFromDB() ([]models.HashData, error) {
+	var hashes []models.HashData
 
 	selectValue := `Select file, checksum, file_path, algorithm from shasum;`
 
@@ -61,11 +54,11 @@ func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 
 	if err != nil {
 		log.Println("error of getting data: " + err.Error())
-		return []HashData{}, err
+		return []models.HashData{}, err
 	}
 
 	for get.Next() {
-		var hash HashData
+		var hash models.HashData
 		err = get.Scan(&hash.FileName, &hash.CheckSum, &hash.FilePath, &hash.Algorithm)
 		hashes = append(hashes, hash)
 	}
@@ -73,18 +66,18 @@ func (r *HashPostgres) GetDataFromDB() ([]HashData, error) {
 }
 
 //Inserting data in database
-func (r *HashPostgres) PutDataInDB(data []HashData) error {
+func (r *HashPostgres) PutDataInDB(data []models.HashData, podData models.PodData) error {
 
 	transaction, err := r.db.Begin()
 
 	if err != nil {
 		log.Println("error with database: " + err.Error())
 	}
-	query := `INSERT INTO shasum(file,checksum,file_path,algorithm) VALUES ($1,$2,$3,$4) 
+	query := `INSERT INTO shasum(file,checksum,file_path,algorithm,pod_name,container_name,image_name,creation_time) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) 
 ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum`
 
 	for _, h := range data {
-		_, err := transaction.Exec(query, h.FileName, h.CheckSum, h.FilePath, h.Algorithm)
+		_, err := transaction.Exec(query, h.FileName, h.CheckSum, h.FilePath, h.Algorithm, podData.PodName, podData.ContainerName, podData.ImageName, podData.CreationTime)
 		if err != nil {
 			transaction.Rollback()
 			return err
@@ -109,8 +102,8 @@ ON CONFLICT ON CONSTRAINT shasum_unique DO UPDATE SET checksum=excluded.checksum
 	return transaction.Commit()
 }
 
-func (r *HashPostgres) GetDataByPathFromDB(alg string) ([]HashData, error) {
-	var hashes []HashData
+func (r *HashPostgres) GetDataByPathFromDB(alg string) ([]models.HashData, error) {
+	var hashes []models.HashData
 
 	selectValue := `Select file, checksum, file_path, algorithm from shasum where algorithm = $1`
 
@@ -118,18 +111,18 @@ func (r *HashPostgres) GetDataByPathFromDB(alg string) ([]HashData, error) {
 
 	if err != nil {
 		log.Println("error of getting data: " + err.Error())
-		return []HashData{}, err
+		return []models.HashData{}, err
 	}
 
 	for get.Next() {
-		var hash HashData
+		var hash models.HashData
 		err = get.Scan(&hash.FileName, &hash.CheckSum, &hash.FilePath, &hash.Algorithm)
 		hashes = append(hashes, hash)
 	}
 	return hashes, nil
 }
 
-func (r *HashPostgres) UpdateDeletedStatusInDB(data []HashData) error {
+func (r *HashPostgres) UpdateDeletedStatusInDB(data []models.HashData) error {
 
 	transaction, err := r.db.Begin()
 
